@@ -7,7 +7,7 @@ const MapsGrid: FunctionComponent = ({ children }) => {
     <Grid
       container
       // spacing={2}
-      style={{ padding: theme.spacing(4) }}
+      style={{ padding: theme.spacing(4), maxWidth: 1440, margin: '0 auto' }}
       alignContent="flex-start"
     >
       {children}

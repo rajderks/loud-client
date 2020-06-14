@@ -24,6 +24,8 @@ const useStyles = makeStyles((theme) => ({
       transform: 'scale(1.05)',
       zIndex: 10,
     },
+    minWidth: 180,
+    maxWidth: 240,
   },
   root: {
     display: 'flex',
@@ -84,7 +86,7 @@ const MapsTile: FunctionComponent<Props> = ({
   const theme = useTheme();
   const downLg = useMediaQuery(theme.breakpoints.down('md'));
   return (
-    <Grid item xs={6} sm={4} md={3} lg={2} className={classes.floep}>
+    <Grid item xs={6} sm={3} md={3} lg={2} xl={2} className={classes.floep}>
       <Card square elevation={1} className={classes.root}>
         <CardMedia image={image} className={classes.media} />
         <div className={classes.titleBox}>

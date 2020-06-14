@@ -7,6 +7,7 @@ import MapsGrid from './MapsGrid';
 const Maps: FunctionComponent<{}> = () => {
   const [maps, setMaps] = useState<MapAttr[] | null>(null);
   const [mapsFailed, setMapsFailed] = useState(false);
+
   useEffect(() => {
     api.get<MapAttr[]>('maps').subscribe(
       (n) => {
@@ -19,6 +20,7 @@ const Maps: FunctionComponent<{}> = () => {
       }
     );
   }, []);
+
   return mapsFailed ? (
     <>please refresh to try again!</>
   ) : (
