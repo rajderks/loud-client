@@ -8,6 +8,7 @@ import {
   colors,
 } from '@material-ui/core';
 import MapsLoadable from './containers/maps/loadable';
+import PageHeader from './components/PageHeader';
 
 const themeLight = createMuiTheme({
   palette: {
@@ -51,6 +52,7 @@ function App() {
             flexDirection: 'column',
           }}
         >
+          <PageHeader />
           <Router>
             <Switch>
               <Route path="/">

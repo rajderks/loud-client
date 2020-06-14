@@ -11,7 +11,7 @@ const Maps: FunctionComponent<{}> = () => {
     api.get<MapAttr[]>('maps').subscribe(
       (n) => {
         setMapsFailed(false);
-        setMaps([...n, ...n, ...n, ...n]);
+        setMaps(n);
       },
       (e) => {
         console.error(e);
