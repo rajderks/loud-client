@@ -1,30 +1,66 @@
-import React, { useState } from 'react';
-import logo from './logo.svg';
-import './App.css';
-import { ajax } from 'rxjs/ajax';
+import React from 'react';
+import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+import {
+  ThemeProvider,
+  createMuiTheme,
+  CssBaseline,
+  useMediaQuery,
+  colors,
+} from '@material-ui/core';
+import MapsLoadable from './containers/maps/loadable';
+
+const themeLight = createMuiTheme({
+  palette: {
+    type: 'light',
+    primary: {
+      main: colors.blue[700],
+    },
+    secondary: {
+      main: colors.yellow[700],
+    },
+  },
+});
+
+const themeDark = createMuiTheme({
+  palette: {
+    type: 'dark',
+    primary: {
+      main: colors.blue[700],
+    },
+    secondary: {
+      main: colors.yellow[700],
+    },
+  },
+});
 
 function App() {
-  ajax.get('http://127.0.0.1:8080/').subscribe((n) => {
-    console.log(n);
-  });
+  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
 
+  const theme = React.useMemo(
+    () => (!prefersDarkMode ? themeLight : themeLight),
+    [prefersDarkMode]
+  );
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
+    <CssBaseline>
+      <ThemeProvider theme={theme}>
+        <div
+          style={{
+            width: '100vw',
+            height: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
         >
-          Learn React
-        </a>
-      </header>
-    </div>
+          <Router>
+            <Switch>
+              <Route path="/">
+                <MapsLoadable />
+              </Route>
+            </Switch>
+          </Router>
+        </div>
+      </ThemeProvider>
+    </CssBaseline>
   );
 }
 
