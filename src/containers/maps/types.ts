@@ -4,4 +4,4 @@ export interface MapsFilter {
   comparator: MapsFilterComparator;
 }
 
-export type MapsFilterComparator = '>' | '=' | '<';
+export type MapsFilterComparator = '>' | '=' | '<' | '<>';

@@ -9,7 +9,7 @@ import api from '../../api/api';
 import MapsTile from './MapsTile';
 import MapsGrid from './MapsGrid';
 import MapsFilters from './MapsFilters';
-import { makeStyles } from '@material-ui/core';
+import { makeStyles, Typography } from '@material-ui/core';
 import { MapsFilter } from './types';
 
 const useStyles = makeStyles((theme) => ({
@@ -27,6 +27,7 @@ const useStyles = makeStyles((theme) => ({
 const Maps: FunctionComponent<{}> = () => {
   const classes = useStyles();
   const [maps, setMaps] = useState<MapAttr[] | null>(null);
+  const [mapsFiltered, setMapsFiltered] = useState<MapAttr[] | null>(maps);
   const [mapsFailed, setMapsFailed] = useState(false);
 
   useEffect(() => {
@@ -34,6 +35,7 @@ const Maps: FunctionComponent<{}> = () => {
       (n) => {
         setMapsFailed(false);
         setMaps(n);
+        setMapsFiltered(n);
       },
       (e) => {
         console.error(e);
@@ -42,21 +44,59 @@ const Maps: FunctionComponent<{}> = () => {
     );
   }, []);
 
-  const handleFiltersChanged = useCallback((filters: MapsFilter[]) => {
-    console.warn(filters);
-  }, []);
+  const handleFiltersChanged = useCallback(
+    (filters: MapsFilter[]) => {
+      console.warn(filters, maps);
+      if (!maps) {
+        return;
+      }
+      if (!filters.length) {
+        setMapsFiltered(maps);
+        return;
+      }
+      setMapsFiltered(
+        maps.slice().filter((map) =>
+          filters.every((filter) => {
+            if (filter.key === 'search') {
+              return (
+                map.name.toLowerCase().includes(String(filter.value)) ||
+                map.author.toLowerCase().includes(String(filter.value))
+              );
+            }
+            const mapVal = map[filter.key as keyof MapAttr];
 
-  return mapsFailed ? (
-    <>please refresh to try again!</>
-  ) : (
+            console.warn(mapVal, filter, typeof mapVal, typeof filter.value);
+            if (typeof mapVal !== typeof filter.value) {
+              return false;
+            }
+            if (filter.comparator === '=') {
+              return mapVal === filter.value;
+            } else if (filter.comparator === '>') {
+              return mapVal > filter.value;
+            } else if (filter.comparator === '<') {
+              return mapVal < filter.value;
+            }
+            return false;
+          })
+        )
+      );
+    },
+    [maps]
+  );
+
+  return (
     <div className={classes.root}>
       <MapsFilters onChangeFilters={handleFiltersChanged} />
       <MapsGrid>
-        {maps
-          ?.map((x, i) => ({ ...x, id: i }))
-          .map((mapAttr) => (
-            <MapsTile {...mapAttr} key={mapAttr.id} />
-          ))}
+        {!mapsFailed ? (
+          mapsFiltered
+            ?.map((x, i) => ({ ...x, id: i }))
+            .map((mapAttr) => <MapsTile {...mapAttr} key={mapAttr.id} />)
+        ) : (
+          <Typography>
+            Something went wrong. Refresh the page to try again
+          </Typography>
+        )}
       </MapsGrid>
     </div>
   );

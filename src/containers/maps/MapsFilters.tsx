@@ -70,18 +70,31 @@ const MapsFilters: FunctionComponent<Props> = ({ onChangeFilters }) => {
   const subjectRef = useRef<Subject<never>>(new Subject());
 
   useEffect(() => {
+    console.warn('I GO');
     const subscription = subjectRef
       .current!.pipe(debounceTime(225))
-      .subscribe((n) => {
+      .subscribe(() => {
+        console.warn('I GO');
         const filters: MapsFilter[] = [];
         if (search) {
-          filters.push({ key: 'search', value: search, comparator: '=' });
+          filters.push({
+            key: 'search',
+            value: search.toLowerCase(),
+            comparator: '<>',
+          });
         }
         if (size !== -1) {
           filters.push({
             key: 'size',
             value: size,
             comparator: sizeComparator,
+          });
+        }
+        if (players.length) {
+          filters.push({
+            key: 'players',
+            value: Number.parseInt(players),
+            comparator: playersComparator,
           });
         }
         onChangeFilters(filters);
@@ -91,7 +104,14 @@ const MapsFilters: FunctionComponent<Props> = ({ onChangeFilters }) => {
         subscription.unsubscribe();
       }
     };
-  }, [onChangeFilters, search, size, sizeComparator]);
+  }, [
+    onChangeFilters,
+    search,
+    size,
+    sizeComparator,
+    playersComparator,
+    players,
+  ]);
 
   useEffect(() => {
     subjectRef.current!.next();
