@@ -3,27 +3,30 @@ import { MapsFilter, MapsFilterComparator } from './types';
 import {
   TextField,
   makeStyles,
-  Select,
   FormControl,
   InputLabel,
-  MenuItem,
   InputAdornment,
   IconButton,
   Icon,
-  Zoom,
+  Button,
+  FormControlLabel,
+  Checkbox,
 } from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
 import ClearIcon from '@material-ui/icons/Clear';
-import PlayersIcon from '@material-ui/icons/Group';
 import SizeIcon from '@material-ui/icons/AspectRatio';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
+import MapsSizeSelect from './MapsSizeSelect';
+import MapsPlayersTextField from './MapsPlayersTextField';
+import MapsComparatorSelect from './MapsComparatorSelect';
 
 const useStyles = makeStyles((theme) => ({
   root: {
     display: 'flex',
     flex: '1 0 100%',
     flexWrap: 'wrap',
+    alignItems: 'center',
     margin: theme.spacing(3, 0, 3, 0),
   },
   formControl: {
@@ -50,16 +53,39 @@ const useStyles = makeStyles((theme) => ({
   sizeSelect: {
     marginLeft: 32,
   },
+  topFilterBar: {
+    display: 'flex',
+    width: '100%',
+    [theme.breakpoints.down('xs')]: {
+      flexWrap: 'wrap',
+    },
+  },
+  addButton: {
+    display: 'flex',
+    flex: '0 0 100px',
+    [theme.breakpoints.down('xs')]: {
+      margin: theme.spacing(1, 0),
+    },
+  },
+  officialFormLabel: {
+    alignSelf: 'flex-end',
+    marginLeft: theme.spacing(2),
+  },
 }));
 
 interface Props {
+  onAddClicked: (open: boolean) => void;
   onChangeFilters: (filters: MapsFilter[]) => void;
 }
 
-const MapsFilters: FunctionComponent<Props> = ({ onChangeFilters }) => {
+const MapsFilters: FunctionComponent<Props> = ({
+  onAddClicked,
+  onChangeFilters,
+}) => {
   const classes = useStyles();
   const [search, setSearch] = useState('');
   const [size, setSize] = useState(-1);
+  const [official, setOfficial] = useState(true);
   const [sizeComparator, setSizeComparator] = useState<MapsFilterComparator>(
     '='
   );
@@ -67,126 +93,141 @@ const MapsFilters: FunctionComponent<Props> = ({ onChangeFilters }) => {
   const [playersComparator, setPlayersComparator] = useState<
     MapsFilterComparator
   >('=');
-  const subjectRef = useRef<Subject<never>>(new Subject());
+  const subjectRef = useRef<
+    Subject<{
+      search: typeof search;
+      size: typeof size;
+      sizeComparator: typeof sizeComparator;
+      playersComparator: typeof playersComparator;
+      players: typeof players;
+      official: typeof official;
+    }>
+  >(new Subject());
 
   useEffect(() => {
-    console.warn('I GO');
     const subscription = subjectRef
       .current!.pipe(debounceTime(225))
-      .subscribe(() => {
-        console.warn('I GO');
-        const filters: MapsFilter[] = [];
-        if (search) {
-          filters.push({
-            key: 'search',
-            value: search.toLowerCase(),
-            comparator: '<>',
-          });
+      .subscribe(
+        ({ search, size, sizeComparator, playersComparator, players }) => {
+          const filters: MapsFilter[] = [];
+          if (search) {
+            filters.push({
+              key: 'search',
+              value: search.toLowerCase(),
+              comparator: '<>',
+            });
+          }
+          if (size !== -1) {
+            filters.push({
+              key: 'size',
+              value: size,
+              comparator: sizeComparator,
+            });
+          }
+          if (players.length) {
+            filters.push({
+              key: 'players',
+              value: Number.parseInt(players),
+              comparator: playersComparator,
+            });
+          }
+          if (official) {
+            filters.push({
+              key: 'official',
+              value: 1,
+              comparator: '=',
+            });
+          }
+          onChangeFilters(filters);
         }
-        if (size !== -1) {
-          filters.push({
-            key: 'size',
-            value: size,
-            comparator: sizeComparator,
-          });
-        }
-        if (players.length) {
-          filters.push({
-            key: 'players',
-            value: Number.parseInt(players),
-            comparator: playersComparator,
-          });
-        }
-        onChangeFilters(filters);
-      });
+      );
     return () => {
       if (subscription) {
         subscription.unsubscribe();
       }
     };
-  }, [
-    onChangeFilters,
-    search,
-    size,
-    sizeComparator,
-    playersComparator,
-    players,
-  ]);
+  });
 
   useEffect(() => {
-    subjectRef.current!.next();
-  }, [search, size, players]);
+    subjectRef.current.next({
+      search,
+      size,
+      players,
+      sizeComparator,
+      playersComparator,
+      official,
+    });
+  }, [players, playersComparator, search, size, sizeComparator, official]);
 
   return (
     <div className={classes.root}>
-      <TextField
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start" disablePointerEvents>
-              <Icon>
-                <SearchIcon />
-              </Icon>
-            </InputAdornment>
-          ),
-          endAdornment: (
-            <InputAdornment position="end">
-              <Zoom in={!!search.length}>
-                <IconButton
-                  size="small"
-                  onClick={() => {
-                    setSearch('');
-                  }}
-                >
-                  <ClearIcon />
-                </IconButton>
-              </Zoom>
-            </InputAdornment>
-          ),
-        }}
-        fullWidth
-        placeholder="Search for a map by name or author"
-        label="Search"
-        onChange={(e) => {
-          setSearch(e.target.value);
-        }}
-        value={search}
-      />
+      <div className={classes.topFilterBar}>
+        <TextField
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start" disablePointerEvents>
+                <Icon>
+                  <SearchIcon />
+                </Icon>
+              </InputAdornment>
+            ),
+            endAdornment: (
+              <InputAdornment position="end">
+                {!!search.length ? (
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      setSearch('');
+                    }}
+                  >
+                    <ClearIcon />
+                  </IconButton>
+                ) : (
+                  <></>
+                )}
+              </InputAdornment>
+            ),
+          }}
+          style={{
+            flex: '1 1 90%',
+            marginRight: '10%',
+          }}
+          placeholder="Search for a map by name or author"
+          label="Search"
+          onChange={(e) => {
+            setSearch(e.target.value);
+          }}
+          value={search}
+        />
+        <Button
+          variant="contained"
+          color="primary"
+          classes={{ root: classes.addButton }}
+          onClick={() => onAddClicked(true)}
+        >
+          ADD MAP
+        </Button>
+      </div>
       <div className={classes.filterWrapper}>
         <FormControl className={classes.formControl}>
           <InputLabel shrink id="size-select">
             Size
           </InputLabel>
-          <Select
+          <MapsSizeSelect
             classes={{ select: classes.sizeSelect }}
-            id="size-select"
-            defaultValue={-1}
+            onChange={setSize}
             value={size}
-            onChange={(e) => {
-              setSize(e.target.value as number);
-            }}
-          >
-            <MenuItem value={-1}>All</MenuItem>
-            <MenuItem value={0}>5x5</MenuItem>
-            <MenuItem value={1}>10x10</MenuItem>
-            <MenuItem value={2}>20x20</MenuItem>
-            <MenuItem value={3}>40x40</MenuItem>
-            <MenuItem value={4}>80x80</MenuItem>
-          </Select>
+            defaultValue={-1}
+          />
         </FormControl>
         <FormControl className={classes.formControl}>
-          <InputLabel shrink id="size-select"></InputLabel>
-          <Select
-            id="size-select"
+          <InputLabel shrink id="size-select-comp"></InputLabel>
+          <MapsComparatorSelect
+            id="size-select-comp"
+            onChange={setPlayersComparator}
             defaultValue="="
-            value={sizeComparator}
-            onChange={(e) => {
-              setSizeComparator(e.target.value as MapsFilterComparator);
-            }}
-          >
-            <MenuItem value="=">=</MenuItem>
-            <MenuItem value=">">{'>'}</MenuItem>
-            <MenuItem value="<">{'<'}</MenuItem>
-          </Select>
+            value={playersComparator}
+          />
         </FormControl>
 
         <SizeIcon className={classes.sizeIcon} />
@@ -196,61 +237,30 @@ const MapsFilters: FunctionComponent<Props> = ({ onChangeFilters }) => {
           <InputLabel shrink id="players-textfield">
             Players
           </InputLabel>
-          <TextField
-            inputMode="numeric"
-            id="players-textfield"
-            InputLabelProps={{ shrink: true }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start" disablePointerEvents>
-                  <Icon>
-                    <PlayersIcon />
-                  </Icon>
-                </InputAdornment>
-              ),
-              endAdornment: (
-                <InputAdornment position="end">
-                  <Zoom in={!!players.length}>
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        setPlayers('');
-                      }}
-                    >
-                      <ClearIcon />
-                    </IconButton>
-                  </Zoom>
-                </InputAdornment>
-              ),
-            }}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val.length && !val.match(/^\d+$/)) {
-                return;
-              }
-
-              setPlayers(val);
-            }}
-            placeholder="Amount of players..."
-            label="Players"
-            value={players}
-          />
+          <MapsPlayersTextField value={players} onChange={setPlayers} />
         </FormControl>
         <FormControl className={classes.formControl}>
-          <InputLabel shrink id="size-select"></InputLabel>
-          <Select
-            id="size-select"
+          <InputLabel shrink id="players-select"></InputLabel>
+          <MapsComparatorSelect
+            id="players-select"
+            onChange={setPlayersComparator}
             defaultValue="="
             value={playersComparator}
-            onChange={(e) => {
-              setPlayersComparator(e.target.value as MapsFilterComparator);
-            }}
-          >
-            <MenuItem value="=">=</MenuItem>
-            <MenuItem value=">">{'>'}</MenuItem>
-            <MenuItem value="<">{'<'}</MenuItem>
-          </Select>
+          />
         </FormControl>
+        <FormControlLabel
+          className={classes.officialFormLabel}
+          label="Official only"
+          control={
+            <Checkbox
+              color="primary"
+              checked={official}
+              onChange={(e) => {
+                setOfficial(e.target.checked);
+              }}
+            />
+          }
+        />
       </div>
     </div>
   );

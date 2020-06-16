@@ -11,6 +11,7 @@ import MapsGrid from './MapsGrid';
 import MapsFilters from './MapsFilters';
 import { makeStyles, Typography } from '@material-ui/core';
 import { MapsFilter } from './types';
+import MapsAddDialog from './MapsAddDialog';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -29,6 +30,7 @@ const Maps: FunctionComponent<{}> = () => {
   const [maps, setMaps] = useState<MapAttr[] | null>(null);
   const [mapsFiltered, setMapsFiltered] = useState<MapAttr[] | null>(maps);
   const [mapsFailed, setMapsFailed] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
   useEffect(() => {
     api.get<MapAttr[]>('maps').subscribe(
@@ -46,17 +48,19 @@ const Maps: FunctionComponent<{}> = () => {
 
   const handleFiltersChanged = useCallback(
     (filters: MapsFilter[]) => {
-      console.warn(filters, maps);
       if (!maps) {
         return;
       }
       if (!filters.length) {
-        setMapsFiltered(maps);
+        setMapsFiltered(maps.slice());
         return;
       }
       setMapsFiltered(
         maps.slice().filter((map) =>
           filters.every((filter) => {
+            if (filter.key === 'official') {
+              return true;
+            }
             if (filter.key === 'search') {
               return (
                 map.name.toLowerCase().includes(String(filter.value)) ||
@@ -65,7 +69,6 @@ const Maps: FunctionComponent<{}> = () => {
             }
             const mapVal = map[filter.key as keyof MapAttr];
 
-            console.warn(mapVal, filter, typeof mapVal, typeof filter.value);
             if (typeof mapVal !== typeof filter.value) {
               return false;
             }
@@ -84,9 +87,17 @@ const Maps: FunctionComponent<{}> = () => {
     [maps]
   );
 
+  const handleAddOpen = useCallback((open) => {
+    setAddOpen(open);
+  }, []);
+
   return (
     <div className={classes.root}>
-      <MapsFilters onChangeFilters={handleFiltersChanged} />
+      <MapsAddDialog open={addOpen} setOpen={handleAddOpen} />
+      <MapsFilters
+        onChangeFilters={handleFiltersChanged}
+        onAddClicked={handleAddOpen}
+      />
       <MapsGrid>
         {!mapsFailed ? (
           mapsFiltered
